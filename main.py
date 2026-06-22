@@ -1,8 +1,9 @@
 import json
 import logging
 from pathlib import Path
-from typing import Iterable, List, Dict
+from typing import Any, Iterable, List, Dict
 
+from agents.scenario_generation_agent import ScenarioGenerationAgent
 from agents.swagger_parser_agent import OpenAPIValidationError, SwaggerParserAgent
 
 LOG_FORMAT = "%(levelname)s: %(asctime)s - %(name)s - %(message)s"
@@ -57,10 +58,43 @@ def print_report(operations: List[Dict[str, object]]) -> None:
     print_discovery_report(operations)
 
 
+def print_scenario_report(scenarios: List[Dict[str, Any]]) -> None:
+    """Print detailed scenario output for each discovered API."""
+    for scenario_definition in scenarios:
+        api = scenario_definition.get("api", "")
+        method = scenario_definition.get("method", "")
+        positive_scenarios = scenario_definition.get("positive_scenarios", [])
+        negative_scenarios = scenario_definition.get("negative_scenarios", [])
+        validation_scenarios = scenario_definition.get("validation_scenarios", [])
+
+        print("=" * 50)
+        print(f"API: {method} {api}")
+        print("=" * 50)
+        print()
+        print("Positive Scenarios:")
+        for scenario in positive_scenarios:
+            print(f"- {scenario}")
+        print()
+        print("Negative Scenarios:")
+        for scenario in negative_scenarios:
+            print(f"- {scenario}")
+        print()
+        print("Validation Scenarios:")
+        for scenario in validation_scenarios:
+            print(f"- {scenario}")
+        print()
+
+
 def load_operations() -> List[Dict[str, object]]:
     """Load the OpenAPI specification and return all parsed operations."""
     parser = SwaggerParserAgent(SPEC_PATH)
     return parser.get_operations()
+
+
+def generate_scenarios(operations: List[Dict[str, object]]) -> List[Dict[str, Any]]:
+    """Generate test scenarios from parsed OpenAPI operations."""
+    generator = ScenarioGenerationAgent(operations)
+    return generator.generate_scenarios()
 
 
 def main() -> None:
@@ -72,6 +106,10 @@ def main() -> None:
         operations = load_operations()
         print_discovery_report(operations)
         logger.info("Successfully discovered %d API operations.", len(operations))
+
+        scenario_definitions = generate_scenarios(operations)
+        print_scenario_report(scenario_definitions)
+        logger.info("Successfully generated scenarios for %d API operations.", len(scenario_definitions))
     except FileNotFoundError as exc:
         logger.error("OpenAPI specification file could not be found: %s", exc)
         print(f"ERROR: OpenAPI specification file not found: {SPEC_PATH.as_posix()}")
