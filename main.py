@@ -114,7 +114,13 @@ def load_operations() -> List[Dict[str, object]]:
     )
 
     enriched_operations = resolver.enrich_operations()
-
+    for operation in enriched_operations:
+        if operation.get("request_schema"):
+            print("\nFIRST ENRICHED OPERATION:")
+            print(operation)
+            break
+            
+            
     return enriched_operations
 
 
