@@ -284,6 +284,12 @@ class SwaggerParserAgent:
         """
         return list(self._operations)
 
+    def get_spec(self) -> Dict[str, Any]:
+        """
+        Return the complete loaded OpenAPI specification.
+        """
+        return self._spec
+
     def __repr__(self) -> str:
         return (
             f"{self.__class__.__name__}(spec_path={self.spec_path!r}, "
