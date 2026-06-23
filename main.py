@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, Iterable, List, Dict
 
 from agents.scenario_generation_agent import ScenarioGenerationAgent
+from agents.schema_resolver_agent import SchemaResolverAgent
 from agents.swagger_parser_agent import OpenAPIValidationError, SwaggerParserAgent
 
 LOG_FORMAT = "%(levelname)s: %(asctime)s - %(name)s - %(message)s"
@@ -20,11 +21,20 @@ def configure_logging() -> None:
 def format_api_table(operations: Iterable[Dict[str, object]]) -> str:
     """Format the extracted API operations into a fixed-width table."""
     lines: List[str] = []
+
     header_method = "Method"
     header_path = "Path"
-    method_width = max((len(str(op.get("method", ""))) for op in operations), default=len(header_method))
+
+    method_width = max(
+        (len(str(op.get("method", ""))) for op in operations),
+        default=len(header_method),
+    )
     method_width = max(method_width, len(header_method))
-    path_width = max((len(str(op.get("path", ""))) for op in operations), default=len(header_path))
+
+    path_width = max(
+        (len(str(op.get("path", ""))) for op in operations),
+        default=len(header_path),
+    )
     path_width = max(path_width, len(header_path))
 
     lines.append(f"{header_method:<{method_width}}   {header_path}")
@@ -71,58 +81,134 @@ def print_scenario_report(scenarios: List[Dict[str, Any]]) -> None:
         print(f"API: {method} {api}")
         print("=" * 50)
         print()
+
         print("Positive Scenarios:")
         for scenario in positive_scenarios:
             print(f"- {scenario}")
+
         print()
+
         print("Negative Scenarios:")
         for scenario in negative_scenarios:
             print(f"- {scenario}")
+
         print()
+
         print("Validation Scenarios:")
         for scenario in validation_scenarios:
             print(f"- {scenario}")
+
         print()
 
 
 def load_operations() -> List[Dict[str, object]]:
-    """Load the OpenAPI specification and return all parsed operations."""
+    """Load OpenAPI specification, resolve schemas, and return enriched operations."""
+
     parser = SwaggerParserAgent(SPEC_PATH)
-    return parser.get_operations()
+
+    operations = parser.get_operations()
+
+    resolver = SchemaResolverAgent(
+        parser.get_spec(),
+        operations,
+    )
+
+    enriched_operations = resolver.enrich_operations()
+
+    return enriched_operations
 
 
-def generate_scenarios(operations: List[Dict[str, object]]) -> List[Dict[str, Any]]:
+def generate_scenarios(
+    operations: List[Dict[str, object]]
+) -> List[Dict[str, Any]]:
     """Generate test scenarios from parsed OpenAPI operations."""
+
     generator = ScenarioGenerationAgent(operations)
+
     return generator.generate_scenarios()
 
 
 def main() -> None:
     """Main entry point for the Agentic API QA framework."""
+
     configure_logging()
+
     logger = logging.getLogger(__name__)
 
     try:
         operations = load_operations()
+        import pprint
+
+        for operation in operations:
+            if operation.get("request_schema"):
+                print("\nSCHEMA FOUND:")
+                pprint.pprint(operation["request_schema"])
+            break
+
         print_discovery_report(operations)
-        logger.info("Successfully discovered %d API operations.", len(operations))
 
-        scenario_definitions = generate_scenarios(operations)
-        print_scenario_report(scenario_definitions)
-        logger.info("Successfully generated scenarios for %d API operations.", len(scenario_definitions))
+        logger.info(
+            "Successfully discovered %d API operations.",
+            len(operations),
+        )
+
+        scenario_definitions = generate_scenarios(
+            operations
+        )
+
+        print_scenario_report(
+            scenario_definitions
+        )
+
+        logger.info(
+            "Successfully generated scenarios for %d API operations.",
+            len(scenario_definitions),
+        )
+
     except FileNotFoundError as exc:
-        logger.error("OpenAPI specification file could not be found: %s", exc)
-        print(f"ERROR: OpenAPI specification file not found: {SPEC_PATH.as_posix()}")
-    except json.JSONDecodeError as exc:
-        logger.error("Failed to parse OpenAPI JSON: %s", exc)
-        print(f"ERROR: Invalid JSON content in {SPEC_PATH.as_posix()}")
-    except OpenAPIValidationError as exc:
-        logger.error("OpenAPI validation failed: %s", exc)
-        print(f"ERROR: OpenAPI validation failed: {exc}")
-    except Exception as exc:  # pragma: no cover
-        logger.exception("Unexpected error while discovering API operations.")
-        print(f"ERROR: Unexpected failure: {exc}")
 
+        logger.error(
+            "OpenAPI specification file could not be found: %s",
+            exc,
+        )
+
+        print(
+            f"ERROR: OpenAPI specification file not found: "
+            f"{SPEC_PATH.as_posix()}"
+        )
+
+    except json.JSONDecodeError as exc:
+
+        logger.error(
+            "Failed to parse OpenAPI JSON: %s",
+            exc,
+        )
+
+        print(
+            f"ERROR: Invalid JSON content in "
+            f"{SPEC_PATH.as_posix()}"
+        )
+
+    except OpenAPIValidationError as exc:
+
+        logger.error(
+            "OpenAPI validation failed: %s",
+            exc,
+        )
+
+        print(
+            f"ERROR: OpenAPI validation failed: {exc}"
+        )
+
+    except Exception as exc:  # pragma: no cover
+
+        logger.exception(
+            "Unexpected error while discovering API operations."
+        )
+
+        print(
+            f"ERROR: Unexpected failure: {exc}"
+        )
 
 
 if __name__ == "__main__":
