@@ -6,6 +6,8 @@ from agents.execution_agent import ExecutionAgent
 from agents.schema_resolver_agent import SchemaResolverAgent
 from agents.swagger_parser_agent import SwaggerParserAgent
 from agents.synthetic_data_agent import SyntheticDataAgent
+from agents.response_validator_agent import ResponseValidatorAgent
+
 
 logging.basicConfig(
     level=logging.INFO,
@@ -130,6 +132,8 @@ def execute_operations(
         base_url=BASE_URL
     )
 
+    validator = ResponseValidatorAgent()
+
     results = []
 
     for operation in operations:
@@ -142,7 +146,6 @@ def execute_operations(
             f"Executing {method} {path}"
         )
         print("=" * 60)
-        
 
         payload = build_payload(
             operation
@@ -156,6 +159,29 @@ def execute_operations(
         result = execution_agent.execute_operation(
             operation=operation,
             payload=payload,
+        )
+
+        validation_result = validator.validate(
+            result
+        )
+
+        print("\nValidation Result:")
+
+        for item in validation_result["validations"]:
+
+            status = (
+                "PASS"
+                if item["passed"]
+                else "FAIL"
+            )
+
+            print(
+                f"{item['check']} : {status}"
+            )
+
+        print(
+            "Overall Validation : "
+            f"{'PASS' if validation_result['passed'] else 'FAIL'}"
         )
 
         results.append(result)
