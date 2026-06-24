@@ -38,9 +38,7 @@ class SyntheticDataAgent:
 
         self.schema_name = schema_name.strip()
         self.schema_definition = schema_definition
-        print("\n")
-        print("USING UPDATED SYNTHETIC DATA AGENT")
-        print("\n")
+       
 
         logger.debug(
             "Initialized SyntheticDataAgent for schema '%s'",

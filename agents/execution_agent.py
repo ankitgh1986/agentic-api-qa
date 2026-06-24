@@ -28,6 +28,12 @@ class ExecutionAgent:
         "username": "user1",
     }
 
+    DEFAULT_QUERY_PARAMS = {
+        "status": "available",
+        "tags": "tag1",
+        "username": "user1",
+    }
+
     def __init__(
         self,
         base_url: str,
@@ -68,6 +74,10 @@ class ExecutionAgent:
         try:
             resolved_path = self._resolve_path_parameters(path)
 
+            query_params = self._build_query_parameters(
+                operation
+            )
+
             url = f"{self.base_url}{resolved_path}"
 
             logger.info(
@@ -82,6 +92,7 @@ class ExecutionAgent:
                 method=method,
                 url=url,
                 payload=payload,
+                query_params=query_params,
             )
 
             elapsed_ms = round(
@@ -134,6 +145,7 @@ class ExecutionAgent:
         method: str,
         url: str,
         payload: Optional[Dict[str, Any]],
+        query_params: Optional[Dict[str, Any]] = None,
     ) -> requests.Response:
         """
         Send HTTP request.
@@ -147,6 +159,7 @@ class ExecutionAgent:
         if method == "GET":
             return requests.get(
                 url,
+                params=query_params,
                 **request_kwargs,
             )
 
@@ -154,6 +167,7 @@ class ExecutionAgent:
             return requests.post(
                 url,
                 json=payload,
+                params=query_params,
                 **request_kwargs,
             )
 
@@ -161,12 +175,14 @@ class ExecutionAgent:
             return requests.put(
                 url,
                 json=payload,
+                params=query_params,
                 **request_kwargs,
             )
 
         if method == "DELETE":
             return requests.delete(
                 url,
+                params=query_params,
                 **request_kwargs,
             )
 
@@ -191,6 +207,35 @@ class ExecutionAgent:
             )
 
         return resolved
+
+    def _build_query_parameters(
+        self,
+        operation: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """
+        Build query parameters from Swagger metadata.
+        """
+
+        parameters = operation.get(
+            "parameters",
+            [],
+        )
+
+        query_params = {}
+
+        for parameter in parameters:
+
+            if parameter.get("in") != "query":
+                continue
+
+            name = parameter.get("name")
+
+            if name in self.DEFAULT_QUERY_PARAMS:
+                query_params[name] = (
+                    self.DEFAULT_QUERY_PARAMS[name]
+                )
+
+        return query_params
 
     def _parse_response(
         self,

@@ -142,6 +142,7 @@ def execute_operations(
             f"Executing {method} {path}"
         )
         print("=" * 60)
+        
 
         payload = build_payload(
             operation
