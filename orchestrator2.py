@@ -7,6 +7,8 @@ from agents.schema_resolver_agent import SchemaResolverAgent
 from agents.swagger_parser_agent import SwaggerParserAgent
 from agents.synthetic_data_agent import SyntheticDataAgent
 from agents.response_validator_agent import ResponseValidatorAgent
+from agents.response_capture_agent import ResponseCaptureAgent
+from agents.state_manager_agent import StateManagerAgent
 from agents.swagger_response_validator_agent import SwaggerResponseValidatorAgent
 from agents.reporting_agent import ReportingAgent
 
@@ -124,7 +126,7 @@ def build_payload(
 
 def execute_operations(
     operations: List[Dict[str, Any]]
-) -> List[Dict[str, Any]]:
+) -> tuple[List[Dict[str, Any]], StateManagerAgent]:
     """
     Execute all supported operations.
     """
@@ -134,6 +136,8 @@ def execute_operations(
     )
 
     validator = ResponseValidatorAgent()
+    response_capture_agent = ResponseCaptureAgent()
+    state_manager = StateManagerAgent()
 
     swagger_validator = (
         SwaggerResponseValidatorAgent()
@@ -164,6 +168,12 @@ def execute_operations(
         result = execution_agent.execute_operation(
             operation=operation,
             payload=payload,
+        )
+
+        response_capture_agent.capture(
+            operation,
+            result,
+            state_manager,
         )
 
         validation_result = validator.validate(
@@ -249,7 +259,7 @@ def execute_operations(
                 f"{result.get('error')}"
             )
 
-    return results
+    return results, state_manager
 
 
 def print_summary(
@@ -324,7 +334,7 @@ def main() -> None:
         f"{len(supported_operations)}"
     )
 
-    results = execute_operations(
+    results, state_manager = execute_operations(
         supported_operations
     )
 
@@ -336,6 +346,11 @@ def main() -> None:
 
     report_path = reporting_agent.generate_csv_report(
         results
+    )
+
+    print(
+        "\nRuntime State----------------",
+        state_manager.dump(),
     )
 
     print(

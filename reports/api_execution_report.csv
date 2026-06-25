@@ -1,20 +1,20 @@
 API,Status Code,Response Time (ms),Execution Status,Response Validation,Swagger Validation,Risk
-PUT /pet,500,1343.99,FAIL,FAIL,FAIL,HIGH
-POST /pet,500,440.71,FAIL,FAIL,FAIL,HIGH
-GET /pet/findByStatus,500,432.12,FAIL,FAIL,FAIL,HIGH
-GET /pet/findByTags,500,465.42,FAIL,FAIL,FAIL,HIGH
-GET /pet/{petId},500,442.9,FAIL,FAIL,FAIL,HIGH
-POST /pet/{petId},400,580.72,FAIL,FAIL,PASS,MEDIUM
-POST /pet/{petId}/uploadImage,400,601.84,FAIL,FAIL,PASS,MEDIUM
-GET /store/inventory,500,483.33,FAIL,FAIL,FAIL,HIGH
-POST /store/order,500,459.24,FAIL,FAIL,FAIL,HIGH
-GET /store/order/{orderId},500,1137.42,FAIL,FAIL,FAIL,HIGH
-POST /user,500,492.81,FAIL,FAIL,FAIL,HIGH
-POST /user/createWithList,400,438.17,FAIL,FAIL,FAIL,MEDIUM
-GET /user/login,200,455.3,PASS,PASS,PASS,LOW
-GET /user/logout,200,471.56,PASS,PASS,PASS,LOW
-GET /user/{username},200,459.37,PASS,PASS,PASS,LOW
-PUT /user/{username},500,499.48,FAIL,FAIL,FAIL,HIGH
+PUT /pet,500,690.11,FAIL,FAIL,FAIL,HIGH
+POST /pet,500,475.55,FAIL,FAIL,FAIL,HIGH
+GET /pet/findByStatus,500,481.53,FAIL,FAIL,FAIL,HIGH
+GET /pet/findByTags,500,433.9,FAIL,FAIL,FAIL,HIGH
+GET /pet/{petId},500,458.87,FAIL,FAIL,FAIL,HIGH
+POST /pet/{petId},400,453.85,FAIL,FAIL,PASS,MEDIUM
+POST /pet/{petId}/uploadImage,400,449.88,FAIL,FAIL,PASS,MEDIUM
+GET /store/inventory,500,444.1,FAIL,FAIL,FAIL,HIGH
+POST /store/order,500,439.72,FAIL,FAIL,FAIL,HIGH
+GET /store/order/{orderId},500,436.41,FAIL,FAIL,FAIL,HIGH
+POST /user,500,488.76,FAIL,FAIL,FAIL,HIGH
+POST /user/createWithList,400,449.67,FAIL,FAIL,FAIL,MEDIUM
+GET /user/login,200,422.37,PASS,PASS,PASS,LOW
+GET /user/logout,200,433.51,PASS,PASS,PASS,LOW
+GET /user/{username},200,445.89,PASS,PASS,PASS,LOW
+PUT /user/{username},500,475.75,FAIL,FAIL,FAIL,HIGH
 
 Execution Summary,
 Total APIs,16
@@ -24,4 +24,4 @@ Response Validation PASS,3
 Response Validation FAIL,13
 Swagger Validation PASS,5
 Swagger Validation FAIL,11
-Average Response Time (ms),575.27
+Average Response Time (ms),467.49
