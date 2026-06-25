@@ -1,20 +1,20 @@
 API,Status Code,Response Time (ms),Execution Status,Response Validation,Swagger Validation,Risk
-PUT /pet,500,690.11,FAIL,FAIL,FAIL,HIGH
-POST /pet,500,475.55,FAIL,FAIL,FAIL,HIGH
-GET /pet/findByStatus,500,481.53,FAIL,FAIL,FAIL,HIGH
-GET /pet/findByTags,500,433.9,FAIL,FAIL,FAIL,HIGH
-GET /pet/{petId},500,458.87,FAIL,FAIL,FAIL,HIGH
-POST /pet/{petId},400,453.85,FAIL,FAIL,PASS,MEDIUM
-POST /pet/{petId}/uploadImage,400,449.88,FAIL,FAIL,PASS,MEDIUM
-GET /store/inventory,500,444.1,FAIL,FAIL,FAIL,HIGH
-POST /store/order,500,439.72,FAIL,FAIL,FAIL,HIGH
-GET /store/order/{orderId},500,436.41,FAIL,FAIL,FAIL,HIGH
-POST /user,500,488.76,FAIL,FAIL,FAIL,HIGH
-POST /user/createWithList,400,449.67,FAIL,FAIL,FAIL,MEDIUM
-GET /user/login,200,422.37,PASS,PASS,PASS,LOW
-GET /user/logout,200,433.51,PASS,PASS,PASS,LOW
-GET /user/{username},200,445.89,PASS,PASS,PASS,LOW
-PUT /user/{username},500,475.75,FAIL,FAIL,FAIL,HIGH
+PUT /pet,400,1561.31,FAIL,FAIL,PASS,MEDIUM
+POST /pet,400,526.84,FAIL,FAIL,PASS,MEDIUM
+GET /pet/findByStatus,500,618.43,FAIL,FAIL,FAIL,HIGH
+GET /pet/findByTags,500,550.95,FAIL,FAIL,FAIL,HIGH
+GET /pet/{petId},500,479.72,FAIL,FAIL,FAIL,HIGH
+POST /pet/{petId},400,455.85,FAIL,FAIL,PASS,MEDIUM
+POST /pet/{petId}/uploadImage,400,452.69,FAIL,FAIL,PASS,MEDIUM
+GET /store/inventory,500,462.97,FAIL,FAIL,FAIL,HIGH
+POST /store/order,400,504.95,FAIL,FAIL,PASS,MEDIUM
+GET /store/order/{orderId},500,456.1,FAIL,FAIL,FAIL,HIGH
+POST /user,400,475.47,FAIL,FAIL,FAIL,MEDIUM
+POST /user/createWithList,400,467.29,FAIL,FAIL,FAIL,MEDIUM
+GET /user/login,200,458.99,PASS,PASS,PASS,LOW
+GET /user/logout,200,455.27,PASS,PASS,PASS,LOW
+GET /user/{username},200,740.14,PASS,PASS,PASS,LOW
+PUT /user/{username},500,484.04,FAIL,FAIL,FAIL,HIGH
 
 Execution Summary,
 Total APIs,16
@@ -22,6 +22,6 @@ Execution Status PASS,3
 Execution Status FAIL,13
 Response Validation PASS,3
 Response Validation FAIL,13
-Swagger Validation PASS,5
-Swagger Validation FAIL,11
-Average Response Time (ms),467.49
+Swagger Validation PASS,8
+Swagger Validation FAIL,8
+Average Response Time (ms),571.94

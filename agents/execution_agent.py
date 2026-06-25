@@ -1,9 +1,12 @@
 import logging
+import re
 import time
 from typing import Any, Dict, Optional
 
 import requests
 import urllib3
+
+from agents.state_manager_agent import StateManagerAgent
 
 # Suppress SSL warnings for corporate laptop environments
 urllib3.disable_warnings(
@@ -39,6 +42,7 @@ class ExecutionAgent:
         base_url: str,
         timeout: int = 30,
         verify_ssl: bool = False,
+        state_manager: Optional[StateManagerAgent] = None,
     ) -> None:
         """
         Initialize execution agent.
@@ -47,10 +51,12 @@ class ExecutionAgent:
             base_url: API base URL.
             timeout: Request timeout in seconds.
             verify_ssl: Whether SSL certificates should be verified.
+            state_manager: Optional runtime state manager to resolve path parameters.
         """
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
         self.verify_ssl = verify_ssl
+        self.state_manager = state_manager
 
     def execute_operation(
         self,
@@ -84,6 +90,10 @@ class ExecutionAgent:
                 "Executing %s %s",
                 method,
                 url,
+            )
+
+            payload = self._resolve_payload_variables(
+                payload
             )
 
             start_time = time.perf_counter()
@@ -195,15 +205,35 @@ class ExecutionAgent:
         path: str,
     ) -> str:
         """
-        Replace path parameters with default values.
+        Replace path parameters with runtime state values or defaults.
         """
 
         resolved = path
 
-        for key, value in self.DEFAULT_PATH_PARAMS.items():
+        for key, default_value in self.DEFAULT_PATH_PARAMS.items():
+            placeholder = f"{{{key}}}"
+
+            if placeholder not in resolved:
+                continue
+
+            runtime_value = None
+
+            if self.state_manager is not None and self.state_manager.exists(key):
+                runtime_value = self.state_manager.get(key)
+
+            if runtime_value is not None:
+                resolved_value = str(runtime_value)
+                logger.info(
+                    "Using runtime value for %s = %s",
+                    key,
+                    resolved_value,
+                )
+            else:
+                resolved_value = str(default_value)
+
             resolved = resolved.replace(
-                f"{{{key}}}",
-                str(value),
+                placeholder,
+                resolved_value,
             )
 
         return resolved
@@ -236,6 +266,65 @@ class ExecutionAgent:
                 )
 
         return query_params
+
+    def _resolve_payload_variables(
+        self,
+        payload: Optional[Any],
+    ) -> Optional[Any]:
+        """
+        Recursively resolve payload placeholders from runtime state.
+        """
+        if payload is None:
+            return None
+
+        if isinstance(payload, dict):
+            return {
+                key: self._resolve_payload_variables(
+                    value
+                )
+                for key, value in payload.items()
+            }
+
+        if isinstance(payload, list):
+            return [
+                self._resolve_payload_variables(item)
+                for item in payload
+            ]
+
+        if isinstance(payload, str):
+            return self._resolve_payload_string(payload)
+
+        return payload
+
+    def _resolve_payload_string(
+        self,
+        value: str,
+    ) -> str:
+        """
+        Resolve individual string placeholders from state.
+        """
+        if self.state_manager is None:
+            return value
+
+        def replace_match(match: re.Match) -> str:
+            variable_name = match.group(1)
+            if self.state_manager.exists(variable_name):
+                resolved_value = self.state_manager.get(
+                    variable_name
+                )
+                logger.info(
+                    "Resolved payload variable:%s = %s",
+                    variable_name,
+                    resolved_value,
+                )
+                return str(resolved_value)
+            return match.group(0)
+
+        return re.sub(
+            r"\{\{([^}]+)\}\}",
+            replace_match,
+            value,
+        )
 
     def _parse_response(
         self,

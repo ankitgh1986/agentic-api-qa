@@ -9,6 +9,7 @@ from agents.synthetic_data_agent import SyntheticDataAgent
 from agents.response_validator_agent import ResponseValidatorAgent
 from agents.response_capture_agent import ResponseCaptureAgent
 from agents.state_manager_agent import StateManagerAgent
+from agents.payload_template_agent import PayloadTemplateAgent
 from agents.swagger_response_validator_agent import SwaggerResponseValidatorAgent
 from agents.reporting_agent import ReportingAgent
 
@@ -131,13 +132,15 @@ def execute_operations(
     Execute all supported operations.
     """
 
+    state_manager = StateManagerAgent()
     execution_agent = ExecutionAgent(
-        base_url=BASE_URL
+        base_url=BASE_URL,
+        state_manager=state_manager,
     )
 
     validator = ResponseValidatorAgent()
     response_capture_agent = ResponseCaptureAgent()
-    state_manager = StateManagerAgent()
+    payload_template_agent = PayloadTemplateAgent()
 
     swagger_validator = (
         SwaggerResponseValidatorAgent()
@@ -164,6 +167,12 @@ def execute_operations(
 
             print("\nPayload:")
             print(payload)
+
+            # Convert generated payload into a runtime-aware template
+            try:
+                payload = payload_template_agent.create_template(payload)
+            except Exception:
+                logger.exception("Failed to create payload template; proceeding with original payload.")
 
         result = execution_agent.execute_operation(
             operation=operation,
