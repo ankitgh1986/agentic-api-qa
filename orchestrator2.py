@@ -7,7 +7,8 @@ from agents.schema_resolver_agent import SchemaResolverAgent
 from agents.swagger_parser_agent import SwaggerParserAgent
 from agents.synthetic_data_agent import SyntheticDataAgent
 from agents.response_validator_agent import ResponseValidatorAgent
-
+from agents.swagger_response_validator_agent import SwaggerResponseValidatorAgent
+from agents.reporting_agent import ReportingAgent
 
 logging.basicConfig(
     level=logging.INFO,
@@ -134,6 +135,10 @@ def execute_operations(
 
     validator = ResponseValidatorAgent()
 
+    swagger_validator = (
+        SwaggerResponseValidatorAgent()
+    )
+
     results = []
 
     for operation in operations:
@@ -165,6 +170,13 @@ def execute_operations(
             result
         )
 
+        swagger_validation = (
+            swagger_validator.validate(
+                operation,
+                result,
+            )
+        )
+
         print("\nValidation Result:")
 
         for item in validation_result["validations"]:
@@ -182,6 +194,40 @@ def execute_operations(
         print(
             "Overall Validation : "
             f"{'PASS' if validation_result['passed'] else 'FAIL'}"
+        )
+
+        print("\nSwagger Validation:")
+
+        for item in swagger_validation["validations"]:
+
+            status = (
+                "PASS"
+                if item["passed"]
+                else "FAIL"
+            )
+
+            print(
+                f"{item['check']} : {status}"
+            )
+
+            print(
+                f"Expected : {item['expected']}"
+            )
+
+            print(
+                f"Actual : {item['actual']}"
+            )
+
+        result["response_validation"] = (
+            "PASS"
+            if validation_result["passed"]
+            else "FAIL"
+        )
+
+        result["swagger_validation"] = (
+            "PASS"
+            if swagger_validation["passed"]
+            else "FAIL"
         )
 
         results.append(result)
@@ -261,7 +307,7 @@ def main() -> None:
 
     print("=" * 60)
     print(
-        "AGENTIC API QA FRAMEWORK - SPRINT 7.0"
+        "AGENTIC API QA FRAMEWORK - SPRINT 9.0"
     )
     print("=" * 60)
 
@@ -284,6 +330,16 @@ def main() -> None:
 
     print_summary(
         results
+    )
+
+    reporting_agent = ReportingAgent()
+
+    report_path = reporting_agent.generate_csv_report(
+        results
+    )
+
+    print(
+        f"\nCSV Report Generated : {report_path}"
     )
 
 
