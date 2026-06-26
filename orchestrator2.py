@@ -10,6 +10,7 @@ from agents.response_validator_agent import ResponseValidatorAgent
 from agents.response_capture_agent import ResponseCaptureAgent
 from agents.state_manager_agent import StateManagerAgent
 from agents.payload_template_agent import PayloadTemplateAgent
+from agents.planning_agent import ExecutionPlannerAgent
 from agents.swagger_response_validator_agent import SwaggerResponseValidatorAgent
 from agents.reporting_agent import ReportingAgent
 
@@ -326,7 +327,7 @@ def main() -> None:
 
     print("=" * 60)
     print(
-        "AGENTIC API QA FRAMEWORK - SPRINT 9.0"
+        "AGENTIC API QA FRAMEWORK - SPRINT 11.0"
     )
     print("=" * 60)
 
@@ -338,13 +339,24 @@ def main() -> None:
         )
     )
 
+    execution_planner_agent = ExecutionPlannerAgent()
+    planned_operations = execution_planner_agent.plan_execution(
+        supported_operations
+    )
+
     print(
         f"\nTotal Supported APIs : "
         f"{len(supported_operations)}"
     )
 
+    print("\nPlanned execution order:")
+    for idx, operation in enumerate(planned_operations, start=1):
+        print(
+            f"{idx}. {operation.get('method', '').upper()} {operation.get('path', '')}"
+        )
+
     results, state_manager = execute_operations(
-        supported_operations
+        planned_operations
     )
 
     print_summary(
