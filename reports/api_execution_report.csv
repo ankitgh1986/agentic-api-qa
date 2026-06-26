@@ -1,27 +1,30 @@
-API,Status Code,Response Time (ms),Execution Status,Response Validation,Swagger Validation,Risk
-POST /pet,400,1230.43,FAIL,FAIL,PASS,MEDIUM
-POST /pet/{petId},400,388.18,FAIL,FAIL,PASS,MEDIUM
-POST /pet/{petId}/uploadImage,400,381.01,FAIL,FAIL,PASS,MEDIUM
-POST /store/order,400,388.93,FAIL,FAIL,PASS,MEDIUM
-POST /user,400,389.76,FAIL,FAIL,FAIL,MEDIUM
-POST /user/createWithList,400,364.32,FAIL,FAIL,FAIL,MEDIUM
-GET /pet/findByStatus,500,429.85,FAIL,FAIL,FAIL,HIGH
-GET /pet/findByTags,500,362.56,FAIL,FAIL,FAIL,HIGH
-GET /pet/{petId},500,383.22,FAIL,FAIL,FAIL,HIGH
-GET /store/inventory,500,373.74,FAIL,FAIL,FAIL,HIGH
-GET /store/order/{orderId},500,377.98,FAIL,FAIL,FAIL,HIGH
-GET /user/login,200,380.23,PASS,PASS,PASS,LOW
-GET /user/logout,200,377.21,PASS,PASS,PASS,LOW
-GET /user/{username},200,350.36,PASS,PASS,PASS,LOW
-PUT /pet,500,459.81,FAIL,FAIL,FAIL,HIGH
-PUT /user/{username},500,364.66,FAIL,FAIL,FAIL,HIGH
+API,Status Code,Response Time (ms),Execution Status,Response Validation,Swagger Validation,Risk,Skip Reason
+POST /pet,400,1502.59,Executed,FAIL,PASS,MEDIUM,
+POST /pet/{petId},,,Skipped,,,UNKNOWN,Parent POST /pet failed
+POST /pet/{petId}/uploadImage,,,Skipped,,,UNKNOWN,Parent POST /pet failed
+POST /store/order,,,Skipped,,,UNKNOWN,Parent POST /pet failed
+POST /user,400,491.63,Executed,FAIL,FAIL,MEDIUM,
+POST /user/createWithList,400,463.64,Executed,FAIL,FAIL,MEDIUM,
+GET /pet/findByStatus,500,428.38,Executed,FAIL,FAIL,HIGH,
+GET /pet/findByTags,500,423.98,Executed,FAIL,FAIL,HIGH,
+GET /pet/{petId},,,Skipped,,,UNKNOWN,Parent POST /pet failed
+GET /store/inventory,500,499.32,Executed,FAIL,FAIL,HIGH,
+GET /store/order/{orderId},,,Skipped,,,UNKNOWN,Parent POST /store/order failed
+GET /user/login,200,410.56,Executed,PASS,PASS,LOW,
+GET /user/logout,200,400.57,Executed,PASS,PASS,LOW,
+GET /user/{username},,,Skipped,,,UNKNOWN,Parent POST /user failed
+PUT /pet,400,436.66,Executed,FAIL,PASS,MEDIUM,
+PUT /user/{username},,,Skipped,,,UNKNOWN,Parent POST /user failed
 
 Execution Summary,
-Total APIs,16
-Execution Status PASS,3
-Execution Status FAIL,13
-Response Validation PASS,3
-Response Validation FAIL,13
-Swagger Validation PASS,7
-Swagger Validation FAIL,9
-Average Response Time (ms),437.64
+Total APIs Planned,16
+Executed,9
+Skipped,7
+Execution Status PASS,2
+Execution Status FAIL,7
+Response Validation PASS,2
+Response Validation FAIL,7
+Swagger Validation PASS,4
+Swagger Validation FAIL,5
+Pass Rate,22.22%
+Average Response Time (ms),561.93

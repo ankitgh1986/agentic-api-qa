@@ -11,6 +11,7 @@ from agents.response_capture_agent import ResponseCaptureAgent
 from agents.state_manager_agent import StateManagerAgent
 from agents.payload_template_agent import PayloadTemplateAgent
 from agents.planning_agent import ExecutionPlannerAgent
+from agents.execution_decision_agent import ExecutionDecisionAgent
 from agents.swagger_response_validator_agent import SwaggerResponseValidatorAgent
 from agents.reporting_agent import ReportingAgent
 
@@ -127,7 +128,8 @@ def build_payload(
 
 
 def execute_operations(
-    operations: List[Dict[str, Any]]
+    operations: List[Dict[str, Any]],
+    dependency_graph: Dict[str, List[str]],
 ) -> tuple[List[Dict[str, Any]], StateManagerAgent]:
     """
     Execute all supported operations.
@@ -139,6 +141,7 @@ def execute_operations(
         state_manager=state_manager,
     )
 
+    decision_agent = ExecutionDecisionAgent()
     validator = ResponseValidatorAgent()
     response_capture_agent = ResponseCaptureAgent()
     payload_template_agent = PayloadTemplateAgent()
@@ -148,11 +151,62 @@ def execute_operations(
     )
 
     results = []
+    execution_results: Dict[str, Dict[str, Any]] = {}
 
     for operation in operations:
 
         method = operation["method"]
         path = operation["path"]
+        operation_identifier = (
+            f"{method.upper()} {path}"
+        )
+
+        should_run = decision_agent.should_execute(
+            operation_identifier,
+            execution_results,
+            dependency_graph,
+        )
+
+        if not should_run:
+            failure_parents = [
+                parent
+                for parent, dependents in dependency_graph.items()
+                if operation_identifier in dependents
+                and not execution_results.get(parent, {}).get("success", False)
+            ]
+            skip_reason = (
+                f"Parent {failure_parents[0]} failed"
+                if failure_parents
+                else "Dependency failed"
+            )
+
+            skip_result = {
+                "method": method,
+                "path": path,
+                "url": None,
+                "status_code": None,
+                "response_time_ms": None,
+                "success": None,
+                "response_body": None,
+                "error": None,
+                "response_validation": None,
+                "swagger_validation": None,
+                "execution_status": "Skipped",
+                "skip_reason": skip_reason,
+            }
+
+            results.append(skip_result)
+            execution_results[operation_identifier] = skip_result
+
+            print(
+                f"Skipping {operation_identifier} due to failed dependency."
+            )
+            logger.info(
+                "Skipped operation due to dependency failure: %s (%s)",
+                operation_identifier,
+                skip_reason,
+            )
+            continue
 
         print("\n" + "=" * 60)
         print(
@@ -185,6 +239,9 @@ def execute_operations(
             result,
             state_manager,
         )
+
+        result["execution_status"] = "Executed"
+        result["skip_reason"] = ""
 
         validation_result = validator.validate(
             result
@@ -269,6 +326,8 @@ def execute_operations(
                 f"{result.get('error')}"
             )
 
+        execution_results[operation_identifier] = result
+
     return results, state_manager
 
 
@@ -280,21 +339,31 @@ def print_summary(
     """
 
     total = len(results)
-
+    skipped = sum(
+        1
+        for result in results
+        if result.get("execution_status") == "Skipped"
+    )
+    executed = total - skipped
     passed = sum(
         1
         for result in results
-        if result.get("success")
+        if result.get("execution_status") == "Executed"
+        and result.get("success")
     )
-
-    failed = total - passed
+    failed = sum(
+        1
+        for result in results
+        if result.get("execution_status") == "Executed"
+        and not result.get("success")
+    )
 
     pass_rate = (
         round(
-            (passed / total) * 100,
+            (passed / executed) * 100,
             2,
         )
-        if total
+        if executed
         else 0
     )
 
@@ -304,7 +373,15 @@ def print_summary(
     print("=" * 60)
 
     print(
-        f"Total APIs Executed : {total}"
+        f"Total APIs Planned : {total}"
+    )
+
+    print(
+        f"Executed            : {executed}"
+    )
+
+    print(
+        f"Skipped             : {skipped}"
     )
 
     print(
@@ -355,8 +432,10 @@ def main() -> None:
             f"{idx}. {operation.get('method', '').upper()} {operation.get('path', '')}"
         )
 
+    dependency_graph = execution_planner_agent.dependency_graph
     results, state_manager = execute_operations(
-        planned_operations
+        planned_operations,
+        dependency_graph,
     )
 
     print_summary(

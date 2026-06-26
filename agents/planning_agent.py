@@ -20,6 +20,7 @@ class ExecutionPlannerAgent:
 
     def __init__(self) -> None:
         self.dependency_agent = ExecutionDependencyAgent()
+        self.dependency_graph: Dict[str, List[str]] = {}
 
     def plan_execution(
         self,
@@ -52,12 +53,12 @@ class ExecutionPlannerAgent:
             if str(operation.get("method", "")).upper() not in self.EXECUTION_PRIORITY
         ]
 
-        dependency_graph = self.dependency_agent.build_dependency_graph(
+        self.dependency_graph = self.dependency_agent.build_dependency_graph(
             operations
         )
         logger.info(
             "Dependency graph discovered: %s",
-            dependency_graph,
+            self.dependency_graph,
         )
 
         plan = prioritized + remaining

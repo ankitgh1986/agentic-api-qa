@@ -45,10 +45,13 @@ class ReportingAgent:
             "Response Validation",
             "Swagger Validation",
             "Risk",
+            "Skip Reason",
         ]
 
         summary = {
             "total_apis": 0,
+            "executed": 0,
+            "skipped": 0,
             "execution_pass": 0,
             "execution_fail": 0,
             "response_validation_pass": 0,
@@ -72,8 +75,9 @@ class ReportingAgent:
                     result.get("method"),
                     result.get("path"),
                 )
-                execution_status = self._format_execution_status(
-                    result.get("success")
+                execution_status = result.get(
+                    "execution_status",
+                    "Executed",
                 )
                 risk = self._determine_risk(
                     result.get("status_code")
@@ -88,29 +92,36 @@ class ReportingAgent:
                         result.get("response_validation"),
                         result.get("swagger_validation"),
                         risk,
+                        result.get("skip_reason"),
                     ]
                 )
 
                 summary["total_apis"] += 1
-                summary["total_response_time_ms"] += self._safe_float(
-                    result.get("response_time_ms")
-                )
-                if execution_status == "PASS":
-                    summary["execution_pass"] += 1
+                if execution_status == "Executed":
+                    summary["executed"] += 1
+                    summary["total_response_time_ms"] += self._safe_float(
+                        result.get("response_time_ms")
+                    )
+                    if result.get("success") is True:
+                        summary["execution_pass"] += 1
+                    else:
+                        summary["execution_fail"] += 1
+                    if self._is_pass(result.get("response_validation")):
+                        summary["response_validation_pass"] += 1
+                    else:
+                        summary["response_validation_fail"] += 1
+                    if self._is_pass(result.get("swagger_validation")):
+                        summary["swagger_validation_pass"] += 1
+                    else:
+                        summary["swagger_validation_fail"] += 1
                 else:
-                    summary["execution_fail"] += 1
-                if self._is_pass(result.get("response_validation")):
-                    summary["response_validation_pass"] += 1
-                else:
-                    summary["response_validation_fail"] += 1
-                if self._is_pass(result.get("swagger_validation")):
-                    summary["swagger_validation_pass"] += 1
-                else:
-                    summary["swagger_validation_fail"] += 1
+                    summary["skipped"] += 1
 
             writer.writerow([])
             writer.writerow(["Execution Summary", ""])
-            writer.writerow(["Total APIs", summary["total_apis"]])
+            writer.writerow(["Total APIs Planned", summary["total_apis"]])
+            writer.writerow(["Executed", summary["executed"]])
+            writer.writerow(["Skipped", summary["skipped"]])
             writer.writerow([
                 "Execution Status PASS",
                 summary["execution_pass"],
@@ -135,10 +146,22 @@ class ReportingAgent:
                 "Swagger Validation FAIL",
                 summary["swagger_validation_fail"],
             ])
+            pass_rate = (
+                round(
+                    (summary["execution_pass"] / summary["executed"]) * 100,
+                    2,
+                )
+                if summary["executed"] > 0
+                else 0.0
+            )
+            writer.writerow([
+                "Pass Rate",
+                f"{pass_rate}%",
+            ])
             average_response_time = (
                 summary["total_response_time_ms"]
-                / summary["total_apis"]
-                if summary["total_apis"] > 0
+                / summary["executed"]
+                if summary["executed"] > 0
                 else 0.0
             )
             writer.writerow(
