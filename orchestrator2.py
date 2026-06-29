@@ -12,6 +12,7 @@ from agents.state_manager_agent import StateManagerAgent
 from agents.payload_template_agent import PayloadTemplateAgent
 from agents.planning_agent import ExecutionPlannerAgent
 from agents.execution_decision_agent import ExecutionDecisionAgent
+from agents.retry_decision_agent import RetryDecisionAgent
 from agents.swagger_response_validator_agent import SwaggerResponseValidatorAgent
 from agents.reporting_agent import ReportingAgent
 from agents.ExecutionGroupingAgent import ExecutionGroupingAgent
@@ -144,6 +145,7 @@ def execute_operations(
     )
 
     decision_agent = ExecutionDecisionAgent()
+    retry_decision_agent = RetryDecisionAgent()
     validator = ResponseValidatorAgent()
     response_capture_agent = ResponseCaptureAgent()
     payload_template_agent = PayloadTemplateAgent()
@@ -192,7 +194,7 @@ def execute_operations(
                 "url": None,
                 "status_code": None,
                 "response_time_ms": None,
-                "success": None,
+                "success": False,
                 "response_body": None,
                 "error": None,
                 "response_validation": None,
@@ -201,10 +203,25 @@ def execute_operations(
                 "skip_reason": skip_reason,
             }
 
+            retry_decision = retry_decision_agent.should_retry(
+                skip_result
+            )
+            skip_result["retry"] = retry_decision["retry"]
+            skip_result["retry_reason"] = retry_decision["reason"]
+            skip_result["retry_category"] = retry_decision.get("category")
+
             logger.info(
                 "Skipped operation due to dependency failure: %s (%s)",
                 operation_identifier,
                 skip_reason,
+            )
+
+            print("\nRetry Decision--------------")
+            print(
+                f"Retry   : {'YES' if skip_result['retry'] else 'NO'}"
+            )
+            print(
+                f"Reason  : {skip_result['retry_reason']}"
             )
 
             return skip_result
@@ -242,6 +259,19 @@ def execute_operations(
 
         result["swagger_validation"] = (
             "PASS" if swagger_validation["passed"] else "FAIL"
+        )
+
+        retry_decision = retry_decision_agent.should_retry(result)
+        result["retry"] = retry_decision["retry"]
+        result["retry_reason"] = retry_decision["reason"]
+        result["retry_category"] = retry_decision.get("category")
+
+        print("\nRetry Decision--------------")
+        print(
+            f"Retry   : {'YES' if result['retry'] else 'NO'}"
+        )
+        print(
+            f"Reason  : {result['retry_reason']}"
         )
 
         return result
@@ -371,7 +401,7 @@ def main() -> None:
 
     print("=" * 60)
     print(
-        "AGENTIC API QA FRAMEWORK - SPRINT 12.0"
+        "AGENTIC API QA FRAMEWORK - SPRINT 13.0"
     )
     print("=" * 60)
 
