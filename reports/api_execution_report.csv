@@ -1,20 +1,20 @@
 API,Status Code,Response Time (ms),Execution Status,Response Validation,Swagger Validation,Risk,Skip Reason
-GET /pet/findByStatus,500,1439.31,Executed,FAIL,FAIL,HIGH,
-POST /user/createWithList,400,1442.93,Executed,FAIL,FAIL,MEDIUM,
-POST /user,400,1512.22,Executed,FAIL,FAIL,MEDIUM,
-POST /pet,400,1520.0,Executed,FAIL,PASS,MEDIUM,
-GET /pet/findByTags,500,612.71,Executed,FAIL,FAIL,HIGH,
-GET /store/inventory,500,622.21,Executed,FAIL,FAIL,HIGH,
-GET /user/login,200,630.17,Executed,PASS,PASS,LOW,
-GET /user/logout,200,569.54,Executed,PASS,PASS,LOW,
-PUT /pet,400,600.23,Executed,FAIL,PASS,MEDIUM,
-GET /pet/{petId},,,Skipped,,,UNKNOWN,Parent POST /pet failed
-POST /pet/{petId},,,Skipped,,,UNKNOWN,Parent POST /pet failed
-POST /pet/{petId}/uploadImage,,,Skipped,,,UNKNOWN,Parent POST /pet failed
-POST /store/order,,,Skipped,,,UNKNOWN,Parent POST /pet failed
-GET /user/{username},,,Skipped,,,UNKNOWN,Parent POST /user failed
-PUT /user/{username},,,Skipped,,,UNKNOWN,Parent POST /user failed
-GET /store/order/{orderId},,,Skipped,,,UNKNOWN,Parent POST /store/order failed
+POST /user/createWithList,400,1422.33,Executed,FAIL,FAIL,MEDIUM,
+POST /user,400,1485.95,Executed,FAIL,FAIL,MEDIUM,
+POST /pet,400,1499.52,Executed,FAIL,PASS,MEDIUM,
+GET /user/login,200,509.43,Executed,PASS,PASS,LOW,
+GET /user/logout,200,526.86,Executed,PASS,PASS,LOW,
+PUT /pet,400,529.1,Executed,FAIL,PASS,MEDIUM,
+GET /pet/findByStatus,500,499.56,Executed,FAIL,FAIL,HIGH,
+GET /pet/findByTags,500,487.39,Executed,FAIL,FAIL,HIGH,
+GET /store/inventory,500,499.04,Executed,FAIL,FAIL,HIGH,
+POST /pet/{petId},,,Skipped,FAIL,FAIL,UNKNOWN,Parent POST /pet failed
+POST /pet/{petId}/uploadImage,,,Skipped,FAIL,FAIL,UNKNOWN,Parent POST /pet failed
+POST /store/order,,,Skipped,FAIL,FAIL,UNKNOWN,Parent POST /pet failed
+GET /pet/{petId},,,Skipped,FAIL,FAIL,UNKNOWN,Parent POST /pet failed
+GET /user/{username},,,Skipped,FAIL,FAIL,UNKNOWN,Parent POST /user failed
+PUT /user/{username},,,Skipped,FAIL,FAIL,UNKNOWN,Parent POST /user failed
+GET /store/order/{orderId},,,Skipped,FAIL,FAIL,UNKNOWN,Parent POST /store/order failed
 
 Execution Summary,
 Total APIs Planned,16
@@ -27,4 +27,4 @@ Response Validation FAIL,7
 Swagger Validation PASS,4
 Swagger Validation FAIL,5
 Pass Rate,22.22%
-Average Response Time (ms),994.37
+Average Response Time (ms),828.8

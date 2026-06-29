@@ -13,6 +13,7 @@ from agents.payload_template_agent import PayloadTemplateAgent
 from agents.planning_agent import ExecutionPlannerAgent
 from agents.execution_decision_agent import ExecutionDecisionAgent
 from agents.retry_decision_agent import RetryDecisionAgent
+from agents.retry_execution_agent import RetryExecutionAgent
 from agents.swagger_response_validator_agent import SwaggerResponseValidatorAgent
 from agents.reporting_agent import ReportingAgent
 from agents.ExecutionGroupingAgent import ExecutionGroupingAgent
@@ -153,6 +154,7 @@ def execute_operations(
     swagger_validator = SwaggerResponseValidatorAgent()
 
     parallel_execution_agent = ParallelExecutionAgent()
+    retry_execution_agent = RetryExecutionAgent()
 
     results: List[Dict[str, Any]] = []
     execution_results: Dict[str, Dict[str, Any]] = {}
@@ -203,9 +205,7 @@ def execute_operations(
                 "skip_reason": skip_reason,
             }
 
-            retry_decision = retry_decision_agent.should_retry(
-                skip_result
-            )
+            retry_decision = retry_decision_agent.should_retry(skip_result)
             skip_result["retry"] = retry_decision["retry"]
             skip_result["retry_reason"] = retry_decision["reason"]
             skip_result["retry_category"] = retry_decision.get("category")
@@ -217,14 +217,26 @@ def execute_operations(
             )
 
             print("\nRetry Decision--------------")
-            print(
-                f"Retry   : {'YES' if skip_result['retry'] else 'NO'}"
-            )
-            print(
-                f"Reason  : {skip_result['retry_reason']}"
+            print(f"Retry   : {'YES' if skip_result['retry'] else 'NO'}")
+            print(f"Reason  : {skip_result['retry_reason']}")
+
+            # Finalize skipped result: capture and validate once
+            final_result = skip_result
+
+            response_capture_agent.capture(operation, final_result, state_manager)
+
+            validation_result = validator.validate(final_result)
+            swagger_validation = swagger_validator.validate(operation, final_result)
+
+            final_result["response_validation"] = (
+                "PASS" if validation_result["passed"] else "FAIL"
             )
 
-            return skip_result
+            final_result["swagger_validation"] = (
+                "PASS" if swagger_validation["passed"] else "FAIL"
+            )
+
+            return final_result
 
         # Execution
         payload = build_payload(operation)
@@ -235,46 +247,60 @@ def execute_operations(
             except Exception:
                 logger.exception("Failed to create payload template; proceeding with original payload.")
 
+        # Initial execution
         result = execution_agent.execute_operation(
             operation=operation,
             payload=payload,
         )
 
-        response_capture_agent.capture(
-            operation,
-            result,
-            state_manager,
-        )
+        # Ensure defaults for execution metadata
+        result["execution_status"] = result.get("execution_status", "Executed")
+        result["skip_reason"] = result.get("skip_reason", "")
 
-        result["execution_status"] = "Executed"
-        result["skip_reason"] = ""
-
-        validation_result = validator.validate(result)
-
-        swagger_validation = swagger_validator.validate(operation, result)
-
-        result["response_validation"] = (
-            "PASS" if validation_result["passed"] else "FAIL"
-        )
-
-        result["swagger_validation"] = (
-            "PASS" if swagger_validation["passed"] else "FAIL"
-        )
-
+        # Decide about retry based on the initial execution result
         retry_decision = retry_decision_agent.should_retry(result)
         result["retry"] = retry_decision["retry"]
         result["retry_reason"] = retry_decision["reason"]
         result["retry_category"] = retry_decision.get("category")
 
         print("\nRetry Decision--------------")
-        print(
-            f"Retry   : {'YES' if result['retry'] else 'NO'}"
-        )
-        print(
-            f"Reason  : {result['retry_reason']}"
+        print(f"Retry   : {'YES' if result['retry'] else 'NO'}")
+        print(f"Reason  : {result['retry_reason']}")
+
+        # If retry requested and this was an executed operation, perform retries
+        if result.get("retry") and result.get("execution_status") != "Skipped":
+            final_result = retry_execution_agent.execute_with_retry(
+                operation=operation,
+                payload=payload,
+                execution_agent=execution_agent,
+                retry_decision=retry_decision,
+                initial_result=result,
+            )
+        else:
+            final_result = result
+
+        # Single capture + validation pass using the final result
+        response_capture_agent.capture(operation, final_result, state_manager)
+
+        validation_result = validator.validate(final_result)
+        swagger_validation = swagger_validator.validate(operation, final_result)
+
+        final_result["response_validation"] = (
+            "PASS" if validation_result["passed"] else "FAIL"
         )
 
-        return result
+        final_result["swagger_validation"] = (
+            "PASS" if swagger_validation["passed"] else "FAIL"
+        )
+
+        # If retries occurred, print a summary
+        if final_result.get("retried"):
+            print("\nRetry Execution Summary--------------")
+            print(f"Retried          : {'YES' if final_result.get('retried') else 'NO'}")
+            print(f"Retry Attempts   : {final_result.get('retry_attempts', 0)}")
+            print(f"Retry Successful : {'YES' if final_result.get('retry_successful') else 'NO'}")
+
+        return final_result
 
     # Execute groups sequentially; operations inside a group run concurrently
     for idx, group in enumerate(execution_groups, start=1):
@@ -401,7 +427,7 @@ def main() -> None:
 
     print("=" * 60)
     print(
-        "AGENTIC API QA FRAMEWORK - SPRINT 13.0"
+        "AGENTIC API QA FRAMEWORK - SPRINT 13.1"
     )
     print("=" * 60)
 
