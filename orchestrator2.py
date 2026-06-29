@@ -14,6 +14,7 @@ from agents.planning_agent import ExecutionPlannerAgent
 from agents.execution_decision_agent import ExecutionDecisionAgent
 from agents.swagger_response_validator_agent import SwaggerResponseValidatorAgent
 from agents.reporting_agent import ReportingAgent
+from agents.ExecutionGroupingAgent import ExecutionGroupingAgent
 
 logging.basicConfig(
     level=logging.INFO,
@@ -400,11 +401,41 @@ def print_summary(
     print("=" * 60)
 
 
+def print_execution_groups(
+    execution_groups: List[List[Dict[str, Any]]]
+) -> None:
+    """
+    Print execution groups in a readable format.
+    """
+
+    if not execution_groups:
+        print("\nNo execution groups generated.")
+        return
+
+    separator = "=" * 60
+    print("\n" + separator + "EXECUTION GROUPS" + separator)
+
+    for group_idx, group in enumerate(
+        execution_groups, 1
+    ):
+        print(f"Group {group_idx}")
+        print("-" * 60)
+
+        for operation in group:
+            method = operation.get(
+                "method", ""
+            ).upper()
+            path = operation.get("path", "")
+            print(f"{method} {path}")
+
+    print(separator)
+
+
 def main() -> None:
 
     print("=" * 60)
     print(
-        "AGENTIC API QA FRAMEWORK - SPRINT 11.0"
+        "AGENTIC API QA FRAMEWORK - SPRINT 12.0"
     )
     print("=" * 60)
 
@@ -433,6 +464,20 @@ def main() -> None:
         )
 
     dependency_graph = execution_planner_agent.dependency_graph
+
+    # Build execution groups using topological layering
+    execution_groups = (
+        ExecutionGroupingAgent.build_execution_groups(
+            planned_operations,
+            dependency_graph,
+        )
+    )
+
+    # Print execution groups
+    print_execution_groups(
+        execution_groups
+    )
+
     results, state_manager = execute_operations(
         planned_operations,
         dependency_graph,
