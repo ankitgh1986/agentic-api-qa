@@ -15,6 +15,7 @@ from agents.execution_decision_agent import ExecutionDecisionAgent
 from agents.swagger_response_validator_agent import SwaggerResponseValidatorAgent
 from agents.reporting_agent import ReportingAgent
 from agents.ExecutionGroupingAgent import ExecutionGroupingAgent
+from agents.parallel_execution_agent import ParallelExecutionAgent
 
 logging.basicConfig(
     level=logging.INFO,
@@ -135,7 +136,7 @@ def execute_operations(
     """
     Execute all supported operations.
     """
-
+    # Prepare runtime agents and state
     state_manager = StateManagerAgent()
     execution_agent = ExecutionAgent(
         base_url=BASE_URL,
@@ -147,20 +148,24 @@ def execute_operations(
     response_capture_agent = ResponseCaptureAgent()
     payload_template_agent = PayloadTemplateAgent()
 
-    swagger_validator = (
-        SwaggerResponseValidatorAgent()
-    )
+    swagger_validator = SwaggerResponseValidatorAgent()
 
-    results = []
+    parallel_execution_agent = ParallelExecutionAgent()
+
+    results: List[Dict[str, Any]] = []
     execution_results: Dict[str, Dict[str, Any]] = {}
 
-    for operation in operations:
+    # Build execution groups from dependency graph
+    execution_groups = ExecutionGroupingAgent.build_execution_groups(
+        operations,
+        dependency_graph,
+    )
 
-        method = operation["method"]
-        path = operation["path"]
-        operation_identifier = (
-            f"{method.upper()} {path}"
-        )
+    # Helper to execute a single operation (used by the parallel agent)
+    def execute_single_operation(operation: Dict[str, Any]) -> Dict[str, Any]:
+        method = operation.get("method")
+        path = operation.get("path")
+        operation_identifier = f"{str(method).upper()} {path}"
 
         should_run = decision_agent.should_execute(
             operation_identifier,
@@ -196,35 +201,18 @@ def execute_operations(
                 "skip_reason": skip_reason,
             }
 
-            results.append(skip_result)
-            execution_results[operation_identifier] = skip_result
-
-            print(
-                f"Skipping {operation_identifier} due to failed dependency."
-            )
             logger.info(
                 "Skipped operation due to dependency failure: %s (%s)",
                 operation_identifier,
                 skip_reason,
             )
-            continue
 
-        print("\n" + "=" * 60)
-        print(
-            f"Executing {method} {path}"
-        )
-        print("=" * 60)
+            return skip_result
 
-        payload = build_payload(
-            operation
-        )
+        # Execution
+        payload = build_payload(operation)
 
         if payload:
-
-            print("\nPayload:")
-            print(payload)
-
-            # Convert generated payload into a runtime-aware template
             try:
                 payload = payload_template_agent.create_template(payload)
             except Exception:
@@ -244,90 +232,38 @@ def execute_operations(
         result["execution_status"] = "Executed"
         result["skip_reason"] = ""
 
-        validation_result = validator.validate(
-            result
-        )
+        validation_result = validator.validate(result)
 
-        swagger_validation = (
-            swagger_validator.validate(
-                operation,
-                result,
-            )
-        )
-
-        print("\nValidation Result:")
-
-        for item in validation_result["validations"]:
-
-            status = (
-                "PASS"
-                if item["passed"]
-                else "FAIL"
-            )
-
-            print(
-                f"{item['check']} : {status}"
-            )
-
-        print(
-            "Overall Validation : "
-            f"{'PASS' if validation_result['passed'] else 'FAIL'}"
-        )
-
-        print("\nSwagger Validation:")
-
-        for item in swagger_validation["validations"]:
-
-            status = (
-                "PASS"
-                if item["passed"]
-                else "FAIL"
-            )
-
-            print(
-                f"{item['check']} : {status}"
-            )
-
-            print(
-                f"Expected : {item['expected']}"
-            )
-
-            print(
-                f"Actual : {item['actual']}"
-            )
+        swagger_validation = swagger_validator.validate(operation, result)
 
         result["response_validation"] = (
-            "PASS"
-            if validation_result["passed"]
-            else "FAIL"
+            "PASS" if validation_result["passed"] else "FAIL"
         )
 
         result["swagger_validation"] = (
-            "PASS"
-            if swagger_validation["passed"]
-            else "FAIL"
+            "PASS" if swagger_validation["passed"] else "FAIL"
         )
 
-        results.append(result)
+        return result
 
-        print(
-            f"\nStatus Code : "
-            f"{result.get('status_code')}"
+    # Execute groups sequentially; operations inside a group run concurrently
+    for idx, group in enumerate(execution_groups, start=1):
+        print("\n" + "=" * 60)
+        print(f"EXECUTING GROUP {idx} / {len(execution_groups)}")
+        print("=" * 60)
+
+        group_results = parallel_execution_agent.execute_group(
+            operations=group,
+            execute_func=execute_single_operation,
         )
 
-        print(
-            f"Response Time : "
-            f"{result.get('response_time_ms')} ms"
-        )
-
-        if result.get("error"):
-
-            print(
-                f"Error : "
-                f"{result.get('error')}"
-            )
-
-        execution_results[operation_identifier] = result
+        # Extend overall results and update execution_results map
+        for res in group_results:
+            method = res.get("method")
+            path = res.get("path")
+            op_key = f"{str(method).upper()} {path}"
+            results.append(res)
+            execution_results[op_key] = res
 
     return results, state_manager
 
@@ -465,19 +401,7 @@ def main() -> None:
 
     dependency_graph = execution_planner_agent.dependency_graph
 
-    # Build execution groups using topological layering
-    execution_groups = (
-        ExecutionGroupingAgent.build_execution_groups(
-            planned_operations,
-            dependency_graph,
-        )
-    )
-
-    # Print execution groups
-    print_execution_groups(
-        execution_groups
-    )
-
+    # Execute all operations (grouped and parallelized inside)
     results, state_manager = execute_operations(
         planned_operations,
         dependency_graph,

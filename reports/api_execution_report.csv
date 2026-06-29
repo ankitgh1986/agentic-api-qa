@@ -1,20 +1,20 @@
 API,Status Code,Response Time (ms),Execution Status,Response Validation,Swagger Validation,Risk,Skip Reason
-POST /pet,400,1818.01,Executed,FAIL,PASS,MEDIUM,
-POST /pet/{petId},,,Skipped,,,UNKNOWN,Parent POST /pet failed
-POST /pet/{petId}/uploadImage,,,Skipped,,,UNKNOWN,Parent POST /pet failed
+GET /pet/findByStatus,500,1485.06,Executed,FAIL,FAIL,HIGH,
+POST /user,400,1489.26,Executed,FAIL,FAIL,MEDIUM,
+POST /pet,400,1488.9,Executed,FAIL,PASS,MEDIUM,
+POST /user/createWithList,400,1713.12,Executed,FAIL,FAIL,MEDIUM,
+GET /pet/findByTags,500,505.75,Executed,FAIL,FAIL,HIGH,
+GET /user/login,200,560.56,Executed,PASS,PASS,LOW,
+GET /store/inventory,500,583.36,Executed,FAIL,FAIL,HIGH,
+GET /user/logout,200,493.65,Executed,PASS,PASS,LOW,
+PUT /pet,400,538.03,Executed,FAIL,PASS,MEDIUM,
 POST /store/order,,,Skipped,,,UNKNOWN,Parent POST /pet failed
-POST /user,400,538.28,Executed,FAIL,FAIL,MEDIUM,
-POST /user/createWithList,400,511.97,Executed,FAIL,FAIL,MEDIUM,
-GET /pet/findByStatus,500,513.7,Executed,FAIL,FAIL,HIGH,
-GET /pet/findByTags,500,505.15,Executed,FAIL,FAIL,HIGH,
+POST /pet/{petId}/uploadImage,,,Skipped,,,UNKNOWN,Parent POST /pet failed
 GET /pet/{petId},,,Skipped,,,UNKNOWN,Parent POST /pet failed
-GET /store/inventory,500,520.14,Executed,FAIL,FAIL,HIGH,
-GET /store/order/{orderId},,,Skipped,,,UNKNOWN,Parent POST /store/order failed
-GET /user/login,200,515.45,Executed,PASS,PASS,LOW,
-GET /user/logout,200,512.3,Executed,PASS,PASS,LOW,
+POST /pet/{petId},,,Skipped,,,UNKNOWN,Parent POST /pet failed
 GET /user/{username},,,Skipped,,,UNKNOWN,Parent POST /user failed
-PUT /pet,400,534.63,Executed,FAIL,PASS,MEDIUM,
 PUT /user/{username},,,Skipped,,,UNKNOWN,Parent POST /user failed
+GET /store/order/{orderId},,,Skipped,,,UNKNOWN,Parent POST /store/order failed
 
 Execution Summary,
 Total APIs Planned,16
@@ -27,4 +27,4 @@ Response Validation FAIL,7
 Swagger Validation PASS,4
 Swagger Validation FAIL,5
 Pass Rate,22.22%
-Average Response Time (ms),663.29
+Average Response Time (ms),984.19
